@@ -1,0 +1,59 @@
+---
+- name: Check ports and services
+  hosts: all
+  vars:
+    web_server_ipv4: "{{ lookup('file', 'web_server_address').splitlines() }}"
+
+  tasks:
+    - name: Check SSH port on all servers
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+        timeout: 3
+      ignore_errors: yes
+
+    - name: Check HTTP port on all servers
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 80
+        state: started
+        timeout: 3
+      ignore_errors: yes
+
+    - name: Check status of HTTPD service
+      service_facts:
+      register: httpd_status
+      when: "'web' in group_names"
+
+    - name: HTTPD service status
+      debug:
+        msg: "{{ httpd_status['ansible_facts']['services']['httpd.service']['state'] }}"
+      when: "'web' in group_names"
+
+    - name: Check status of Nginx service
+      docker_container_info:
+        name: nginx
+      ignore_errors: yes
+      register: nginx_status
+      when: "'lb' in group_names"
+
+    - name: Nginx container provisioning status
+      debug:
+        msg: "Nginx container {{ 'is provisioned' if nginx_status.exists else 'is not provisioned' }}"
+      when: "'lb' in group_names"
+
+    - name: Nginx container running status
+      debug:
+        msg: "Nginx container status is {{ nginx_status.container['State']['Status'] }}"
+      when: "'lb' in group_names and nginx_status.exists"
+
+    - name: Nginx display page
+      debug: msg="{{ lookup('url', 'http://' + hostvars[inventory_hostname]['ansible_eth1']['ipv4']['address'], wantlist=True) }}"
+      when: "'lb' in group_names and nginx_status.exists and nginx_status.container['State']['Status'] is search('running')"
+      loop: "{{ web_server_ipv4 }}"
+
+    - name: Remove web_server_address temporary file
+      file:
+        path: web_server_address
+        state: absent

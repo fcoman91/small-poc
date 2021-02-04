@@ -1,0 +1,102 @@
+---
+- name: Provision nginx server
+  hosts: all
+  vars:
+    download_path: /home/vagrant
+    web_server_ipv4: "{{ lookup('file', 'web_server_address').splitlines() }}"
+    new_nginx_image: nginx_lb
+
+  tasks:
+    - name: Generate Ansible inventory file
+      template:
+        src: inventory.j2
+        dest: inventory
+      delegate_to: localhost
+
+    - name: Uninstall old versions
+      become: yes
+      yum:
+        name: "{{ item }}"
+        state: absent
+      with_items: [docker, docker-client, docker-client-latest, docker-common, docker-latest, docker-latest-logrotate, docker-logrotate, docker-engine]
+
+    - name: Download get-docker.sh script
+      get_url:
+        url: https://get.docker.com
+        dest: "{{ download_path }}/get-docker.sh"
+
+    - name: Run get-docker.sh script
+      become: yes
+      shell: "sh {{ download_path }}/get-docker.sh"
+
+    - name: Install python-docker package
+      become: yes
+      yum:
+        name: python-docker-py
+        state: installed
+
+    - name: Install epel-release repository
+      become: yes
+      yum:
+        name: epel-release
+        state: installed
+
+    - name: Install python-pip
+      become: yes
+      yum:
+        name: python-pip
+        state: installed
+
+    - name: Uninstall docker-py via python-pip
+      become: yes
+      pip:
+        name: docker-py
+        state: absent
+      ignore_errors: true
+
+    - name: Install docker via python-pip
+      become: yes
+      pip:
+        name: docker
+        state: present
+      ignore_errors: true
+
+    - name: Add vagrant user to docker group
+      become: yes
+      command: usermod -aG docker vagrant
+
+    - name: Enable docker service
+      become: yes
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add web server to nginx.conf
+      template:
+        src: nginx.conf.j2
+        dest: "{{ download_path }}/nginx.conf"
+
+    - name: Copy nginx config files on guest host
+      copy:
+        src: "{{ item }}"
+        dest: "{{ download_path }}"
+      with_items:
+        - nginx_config/default.conf
+        - Dockerfile
+
+    - name: Create new nginx docker image
+      become: yes
+      docker_image:
+        name: "{{ new_nginx_image }}"
+        build:
+          path: "{{ download_path }}"
+        source: build
+
+    - name: Run new nginx docker container as LB for web servers
+      become: yes
+      docker_container:
+        name: nginx
+        state: started
+        image: "{{ new_nginx_image }}"
+        network_mode: host

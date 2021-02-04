@@ -1,0 +1,31 @@
+---
+- name: Provision web servers
+  hosts: all
+
+  tasks:
+    - name: Install apache
+      become: yes
+      yum:
+        name: httpd
+        state: installed
+
+    - name: Enable apache service
+      become: yes
+      systemd:
+        name: httpd
+        state: started
+        enabled: yes
+
+    - name: Create web servers index.html
+      become: yes
+      template:
+        src: web_index.j2
+        dest: /var/www/html/index.html
+
+    - name: Save web servers IPv4 addresses to temporary file
+      lineinfile:
+        path: web_server_address
+        line: "{{ hostvars[inventory_hostname]['ansible_eth1']['ipv4']['address'] }}"
+        insertbefore: EOF
+        create: yes
+      delegate_to: localhost
