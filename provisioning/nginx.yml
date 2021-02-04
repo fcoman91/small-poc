@@ -99,4 +99,5 @@
         name: nginx
         state: started
         image: "{{ new_nginx_image }}"
-        network_mode: host
+        ports:
+          - "80:80"

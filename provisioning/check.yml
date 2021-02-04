@@ -52,8 +52,3 @@
       debug: msg="{{ lookup('url', 'http://' + hostvars[inventory_hostname]['ansible_eth1']['ipv4']['address'], wantlist=True) }}"
       when: "'lb' in group_names and nginx_status.exists and nginx_status.container['State']['Status'] is search('running')"
       loop: "{{ web_server_ipv4 }}"
-
-    - name: Remove web_server_address temporary file
-      file:
-        path: web_server_address
-        state: absent

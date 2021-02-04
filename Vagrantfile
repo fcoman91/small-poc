@@ -5,6 +5,7 @@ WEB_START_IP = 100
 LB_IP = 200
 
 SRC_PUB_KEY = "/home/florian/.ssh/id_rsa.pub"
+SRC_PRIVATE_KEY = "/home/florian/.ssh/id_rsa"
 AUTHORIZED_FILE = "/home/vagrant/.ssh/authorized_keys"
 
 Vagrant.configure("2") do |config|
@@ -54,6 +55,7 @@ Vagrant.configure("2") do |config|
         node.vm.provision "ansible" do |ansible|
             ansible.compatibility_mode = "2.0"
             ansible.playbook = "provisioning/nginx.yml"
+            ansible.extra_vars = { private_key_path: "#{SRC_PRIVATE_KEY}" }
         end
     end
 end

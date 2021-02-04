@@ -1,7 +1,7 @@
 {% for ip in web_server_ipv4 %}
-web{{ loop.index }} ansible_host={{ ip }} ansible_port=22 ansible_user='vagrant' ansible_ssh_common_args='-o StrictHostKeyChecking=no' ansible_ssh_private_key_file='/home/florian/.ssh/id_rsa'
+web{{ loop.index }} ansible_host={{ ip }} ansible_port=22 ansible_user='vagrant' ansible_ssh_private_key_file='{{ private_key_path }}'
 {%endfor%}
-nginx ansible_host={{ hostvars[inventory_hostname]['ansible_eth1']['ipv4']['address'] }} ansible_port=22 ansible_user='vagrant' ansible_ssh_common_args='-o StrictHostKeyChecking=no' ansible_ssh_private_key_file='/home/florian/.ssh/id_rsa'
+nginx ansible_host={{ hostvars[inventory_hostname]['ansible_eth1']['ipv4']['address'] }} ansible_port=22 ansible_user='vagrant' ansible_ssh_private_key_file='{{ private_key_path }}'
 
 [web]
 {% for ip in web_server_ipv4 %}

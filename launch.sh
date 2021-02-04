@@ -45,11 +45,12 @@ sed -i "s/^NETWORK.*/NETWORK = \"$network\"/" $PWD/Vagrantfile
 sed -i "s/^WEB_START_IP.*/WEB_START_IP = $web_start_ip/" $PWD/Vagrantfile
 sed -i "s/^LB_IP.*/LB_IP = $lb_ip/" $PWD/Vagrantfile
 
-# Add appropriate path for SSH public key
+# Add appropriate path for SSH pair keys
 sed -i "s|^SRC_PUB_KEY.*|SRC_PUB_KEY = \"$HOME/\.ssh/id_rsa.pub\"|" $PWD/Vagrantfile
+sed -i "s|^SRC_PRIVATE_KEY.*|SRC_PRIVATE_KEY = \"$HOME/\.ssh/id_rsa\"|" $PWD/Vagrantfile
 
 echo -e "\nGenerate SSH key pair for \"$USER\" user"
-ssh-keygen -q -t rsa -b 4096 -N '' -f ~/.ssh/id_rsa
+echo -e 'y\n' | ssh-keygen -q -t rsa -b 4096 -N '' -f ~/.ssh/id_rsa >> /dev/null
 
 echo -e "\nProvision and configure web and nginx servers via Vagrant and Ansible"
 vagrant up
